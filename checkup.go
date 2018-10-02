@@ -206,8 +206,6 @@ func (c Checkup) MarshalJSON() ([]byte, error) {
 		switch c.Storage.(type) {
 		case *GitHub:
 			providerName = "github"
-		case S3:
-			providerName = "s3"
 		case FS:
 			providerName = "fs"
 		case SQL:
@@ -321,13 +319,6 @@ func (c *Checkup) UnmarshalJSON(b []byte) error {
 	}
 	if raw.Storage != nil {
 		switch types.Storage.Provider {
-		case "s3":
-			var storage S3
-			err = json.Unmarshal(raw.Storage, &storage)
-			if err != nil {
-				return err
-			}
-			c.Storage = storage
 		case "fs":
 			var storage FS
 			err = json.Unmarshal(raw.Storage, &storage)
