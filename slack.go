@@ -16,19 +16,26 @@ type Slack struct {
 	Webhook  string `json:"webhook"`
 }
 
+var notifications map[string]int = make(map[string]int) // current notifications
+
 // Notify implements notifier interface
 func (s Slack) Notify(results []Result) error {
 	for _, result := range results {
+		notificationStatus, hasNotification := notifications[result.Title]
 		if !result.Healthy {
-			s.Send(result)
+			notifications[result.Title] = 1
+			if !hasNotification || notificationStatus == 0 {
+				s.Send(result, "danger")
+			}
+		} else if hasNotification && notificationStatus == 1 {
+			notifications[result.Title] = 0
+			s.Send(result, "good")
 		}
 	}
 	return nil
 }
 
-// Send request via Slack API to create incident
-func (s Slack) Send(result Result) error {
-	color := "danger"
+func (s Slack) Send(result Result, color string) error {
 	attach := slack.Attachment{}
 	attach.AddField(slack.Field{Title: result.Title, Value: result.Endpoint})
 	attach.AddField(slack.Field{Title: "Status", Value: strings.ToUpper(fmt.Sprint(result.Status()))})
