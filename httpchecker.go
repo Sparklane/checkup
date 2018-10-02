@@ -56,6 +56,15 @@ type HTTPChecker struct {
 	// occurs between attempts.
 	AttemptSpacing time.Duration `json:"attempt_spacing,omitempty"`
 
+	// Retries is how many retry requests.
+	Retries int `json:"retries,omitempty"`
+
+	// RetrySpacing spaces out each retry in a check
+	// by this duration to avoid hitting a remote too
+	// quickly in succession. By default, no waiting
+	// occurs between retries.
+	RetrySpacing time.Duration `json:"retry_spacing,omitempty"`
+
 	// Client is the http.Client with which to make
 	// requests. If not set, DefaultHTTPClient is
 	// used.
@@ -71,6 +80,9 @@ type HTTPChecker struct {
 func (c HTTPChecker) Check() (Result, error) {
 	if c.Attempts < 1 {
 		c.Attempts = 1
+	}
+	if c.Retries < 1 {
+		c.Retries = 0
 	}
 	if c.Client == nil {
 		c.Client = DefaultHTTPClient
@@ -91,32 +103,71 @@ func (c HTTPChecker) Check() (Result, error) {
 		}
 	}
 
-	result.Times = c.doChecks(req)
+	result.Times = c.doChecks()
 
 	return c.conclude(result), nil
 }
 
-// doChecks executes req using c.Client and returns each attempt.
-func (c HTTPChecker) doChecks(req *http.Request) Attempts {
+// doChecks executes and returns each attempt.
+func (c HTTPChecker) doChecks() Attempts {
 	checks := make(Attempts, c.Attempts)
 	for i := 0; i < c.Attempts; i++ {
 		start := time.Now()
-		resp, err := c.Client.Do(req)
-		checks[i].RTT = time.Since(start)
+		// check
+		err := c.doCheck()
 		if err != nil {
 			checks[i].Error = err.Error()
-			continue
+			// retries
+			if err != nil && c.Retries > 0 {
+				err = c.doRetries()
+				if err != nil {
+					checks[i].Error = err.Error()
+				} else {
+					checks[i].RTT = time.Since(start)
+				}
+			}
+		} else {
+			checks[i].RTT = time.Since(start)
 		}
-		err = c.checkDown(resp)
-		if err != nil {
-			checks[i].Error = err.Error()
-		}
-		resp.Body.Close()
-		if c.AttemptSpacing > 0 {
+ 		if c.AttemptSpacing > 0 {
 			time.Sleep(c.AttemptSpacing)
 		}
 	}
 	return checks
+}
+
+// doRetries executes retries and returns last error.
+func (c HTTPChecker) doRetries() error {
+	j := 1
+	for {
+		if c.RetrySpacing > 0 {
+			time.Sleep(c.RetrySpacing)
+		}
+		err := c.doCheck()
+		if j >= c.Retries || err == nil {
+			return err
+		}
+		j++
+	}
+}
+
+// doCheck executes check and returns error.
+func (c HTTPChecker) doCheck() error {
+		// recreate http request to run dns resolution for each iteration
+		req, err := http.NewRequest("GET", c.URL, nil)
+		if err != nil {
+			return err
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		err = c.checkDown(resp)
+		if err != nil {
+			return err
+		}
+		return nil
 }
 
 // conclude takes the data in result from the attempts and

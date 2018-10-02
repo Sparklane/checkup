@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"errors"
 	"io/ioutil"
 	"net"
 	"time"
@@ -44,6 +45,15 @@ type TCPChecker struct {
 	// Attempts is how many requests the client will
 	// make to the endpoint in a single check.
 	Attempts int `json:"attempts,omitempty"`
+
+	// Retries is how many retry requests.
+	Retries int `json:"retries,omitempty"`
+
+	// RetrySpacing spaces out each retry in a check
+	// by this duration to avoid hitting a remote too
+	// quickly in succession. By default, no waiting
+	// occurs between retries.
+	RetrySpacing time.Duration `json:"retry_spacing,omitempty"`
 }
 
 // Check performs checks using c according to its configuration.
@@ -51,6 +61,9 @@ type TCPChecker struct {
 func (c TCPChecker) Check() (Result, error) {
 	if c.Attempts < 1 {
 		c.Attempts = 1
+	}
+	if c.Retries < 1 {
+		c.Retries = 0
 	}
 
 	result := Result{Title: c.Name, Endpoint: c.URL, Timestamp: Timestamp()}
@@ -61,9 +74,6 @@ func (c TCPChecker) Check() (Result, error) {
 
 // doChecks executes and returns each attempt.
 func (c TCPChecker) doChecks() Attempts {
-	var err error
-	var conn net.Conn
-
 	timeout := c.Timeout
 	if timeout == 0 {
 		timeout = 1 * time.Second
@@ -72,44 +82,72 @@ func (c TCPChecker) doChecks() Attempts {
 	checks := make(Attempts, c.Attempts)
 	for i := 0; i < c.Attempts; i++ {
 		start := time.Now()
-
-		if c.TLSEnabled {
-			// Dialer with timeout
-			dialer := &net.Dialer{
-				Timeout: timeout,
-			}
-
-			// TLS config based on configuration
-			var tlsConfig tls.Config
-			tlsConfig.InsecureSkipVerify = c.TLSSkipVerify
-			if c.TLSCAFile != "" {
-				rootPEM, err := ioutil.ReadFile(c.TLSCAFile)
-				if err != nil || rootPEM == nil {
-					checks[i].Error = "failed to read root certificate"
-				}
-				pool := x509.NewCertPool()
-				ok := pool.AppendCertsFromPEM([]byte(rootPEM))
-				if !ok {
-					checks[i].Error = "failed to parse root certificate"
-				}
-				tlsConfig.RootCAs = pool
-			}
-			if conn, err = tls.DialWithDialer(dialer, "tcp", c.URL, &tlsConfig); err == nil {
-				conn.Close()
-			}
-		} else {
-			if conn, err = net.DialTimeout("tcp", c.URL, c.Timeout); err == nil {
-				conn.Close()
-			}
-		}
-
-		checks[i].RTT = time.Since(start)
+		err := c.doCheck(timeout)
 		if err != nil {
 			checks[i].Error = err.Error()
-			continue
+			// retries
+			if err != nil && c.Retries > 0 {
+				err = c.doRetries(timeout)
+				if err != nil {
+					checks[i].Error = err.Error()
+				} else {
+					checks[i].RTT = time.Since(start)
+				}
+			}
+		} else {
+			checks[i].RTT = time.Since(start)
 		}
 	}
 	return checks
+}
+
+// doRetries executes retries and returns last error.
+func (c TCPChecker) doRetries(timeout time.Duration) error {
+	j := 1
+	for {
+		if c.RetrySpacing > 0 {
+			time.Sleep(c.RetrySpacing)
+		}
+		err := c.doCheck(timeout)
+		if j >= c.Retries || err == nil {
+			return err
+		}
+		j++
+	}
+}
+
+func (c TCPChecker) doCheck(timeout time.Duration) error {
+	var err error
+	var conn net.Conn
+	if c.TLSEnabled {
+		// Dialer with timeout
+		dialer := &net.Dialer{
+			Timeout: timeout,
+		}
+		// TLS config based on configuration
+		var tlsConfig tls.Config
+		tlsConfig.InsecureSkipVerify = c.TLSSkipVerify
+		if c.TLSCAFile != "" {
+			rootPEM, err := ioutil.ReadFile(c.TLSCAFile)
+			if err != nil || rootPEM == nil {
+				err = errors.New("failed to read root certificate")
+			}
+			pool := x509.NewCertPool()
+			ok := pool.AppendCertsFromPEM([]byte(rootPEM))
+			if !ok {
+				err = errors.New("failed to parse root certificate")
+			}
+			tlsConfig.RootCAs = pool
+		}
+		if conn, err = tls.DialWithDialer(dialer, "tcp", c.URL, &tlsConfig); err == nil {
+			conn.Close()
+		}
+	} else {
+		if conn, err = net.DialTimeout("tcp", c.URL, c.Timeout); err == nil {
+			conn.Close()
+		}
+	}
+	return err
 }
 
 // conclude takes the data in result from the attempts and
