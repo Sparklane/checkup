@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
 setInterval(function() {
 	checkup.storage.getNewChecks(processNewCheckFile, allCheckFilesLoaded);
 }, checkup.config.refresh_interval * 1000);
+// Run immediately so as not to wait for interval
+checkup.storage.getNewChecks(processNewCheckFile, allCheckFilesLoaded)
 
 // Update "time ago" tags every so often
 setInterval(function() {
