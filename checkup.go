@@ -128,6 +128,9 @@ func (c Checkup) CheckAndStore() error {
 // would not be wise to set an interval lower than the time it takes
 // to perform the checks.
 func (c Checkup) CheckAndStoreEvery(interval time.Duration) *time.Ticker {
+	if err := c.CheckAndStore(); err != nil {
+		log.Println(err)
+	}
 	ticker := time.NewTicker(interval)
 	go func() {
 		for range ticker.C {
