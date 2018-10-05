@@ -1,4 +1,4 @@
-**fork from https://github.com/sourcegraph/checkup**
+**forked from https://github.com/sourcegraph/checkup**
 
 **Checkup is distributed, lock-free, self-hosted health checks and status pages, written in Go.**
 
