@@ -116,7 +116,6 @@ func (c HTTPChecker) doChecks() Attempts {
 		// check
 		err := c.doCheck()
 		if err != nil {
-			checks[i].Error = err.Error()
 			// retries
 			if err != nil && c.Retries > 0 {
 				err = c.doRetries()
@@ -125,6 +124,8 @@ func (c HTTPChecker) doChecks() Attempts {
 				} else {
 					checks[i].RTT = time.Since(start)
 				}
+			} else {
+				checks[i].Error = err.Error()
 			}
 		} else {
 			checks[i].RTT = time.Since(start)

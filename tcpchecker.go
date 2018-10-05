@@ -84,7 +84,6 @@ func (c TCPChecker) doChecks() Attempts {
 		start := time.Now()
 		err := c.doCheck(timeout)
 		if err != nil {
-			checks[i].Error = err.Error()
 			// retries
 			if err != nil && c.Retries > 0 {
 				err = c.doRetries(timeout)
@@ -93,6 +92,8 @@ func (c TCPChecker) doChecks() Attempts {
 				} else {
 					checks[i].RTT = time.Since(start)
 				}
+			} else {
+				checks[i].Error = err.Error()
 			}
 		} else {
 			checks[i].RTT = time.Since(start)
