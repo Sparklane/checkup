@@ -1,3 +1,5 @@
+**fork from https://github.com/sourcegraph/checkup**
+
 **Checkup is distributed, lock-free, self-hosted health checks and status pages, written in Go.**
 
 **It features an elegant, minimalistic CLI and an idiomatic Go library. They are completely interoperable and their configuration is beautifully symmetric.**
