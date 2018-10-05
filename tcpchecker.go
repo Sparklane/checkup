@@ -85,7 +85,7 @@ func (c TCPChecker) doChecks() Attempts {
 		err := c.doCheck(timeout)
 		if err != nil {
 			// retries
-			if err != nil && c.Retries > 0 {
+			if c.Retries > 0 {
 				err = c.doRetries(timeout)
 				if err != nil {
 					checks[i].Error = err.Error()

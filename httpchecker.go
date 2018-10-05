@@ -117,7 +117,7 @@ func (c HTTPChecker) doChecks() Attempts {
 		err := c.doCheck()
 		if err != nil {
 			// retries
-			if err != nil && c.Retries > 0 {
+			if c.Retries > 0 {
 				err = c.doRetries()
 				if err != nil {
 					checks[i].Error = err.Error()
