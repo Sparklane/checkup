@@ -25,7 +25,11 @@ func (s Slack) Notify(results []Result) error {
 		if !result.Healthy {
 			notifications[result.Title] = 1
 			if !hasNotification || notificationStatus == 0 {
-				s.Send(result, "danger")
+				color := "danger"
+				if result.Degraded {
+					color = "warning"
+				}
+				s.Send(result, color)
 			}
 		} else if hasNotification && notificationStatus == 1 {
 			notifications[result.Title] = 0
