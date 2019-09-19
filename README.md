@@ -18,6 +18,7 @@ Checkup currently supports these checkers:
 - TCP (+TLS)
 - DNS
 - TLS
+- Backup S3
 
 Checkup implements these storage providers:
 
@@ -130,6 +131,19 @@ Here are the configuration structures you can use, which are explained fully [in
 	"type": "tls",
 	"endpoint_name": "Example TLS Protocol Check",
 	"endpoint_url": "www.example.com:443"
+}
+```
+
+#### Backup S3
+
+```json
+{
+	"type": "backup:s3",
+	"endpoint_name": "backup",
+	"region": "eu-west-1",
+	"bucket_name": "BUCKET NAME",
+	"min_age_threshold": "36h",
+	"min_size_threshold": 1048576
 }
 ```
 
