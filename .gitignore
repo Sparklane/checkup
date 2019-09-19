@@ -8,3 +8,4 @@ builds/
 dist/
 .envrc
 checkup
+config-test.json
