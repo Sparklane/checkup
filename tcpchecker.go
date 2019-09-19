@@ -3,8 +3,8 @@ package checkup
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"time"
