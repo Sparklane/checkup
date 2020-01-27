@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/drone/envsubst"
 )
 
 // HTTPChecker implements a Checker for HTTP endpoints.
@@ -73,6 +75,10 @@ type HTTPChecker struct {
 	// Headers contains headers to added to the request
 	// that is sent for the check
 	Headers http.Header `json:"headers,omitempty"`
+
+	// Headers contains headers to added to the request
+	// that is sent for the check
+	BasicAuth map[string]string `json:"basic_auth,omitempty"`
 }
 
 // Check performs checks using c according to its configuration.
@@ -92,16 +98,6 @@ func (c HTTPChecker) Check() (Result, error) {
 	}
 
 	result := Result{Title: c.Name, Endpoint: c.URL, Timestamp: Timestamp()}
-	req, err := http.NewRequest("GET", c.URL, nil)
-	if err != nil {
-		return result, err
-	}
-
-	if c.Headers != nil {
-		for key, header := range c.Headers {
-			req.Header.Add(key, strings.Join(header, ", "))
-		}
-	}
 
 	result.Times = c.doChecks()
 
@@ -158,6 +154,19 @@ func (c HTTPChecker) doCheck() error {
 		req, err := http.NewRequest("GET", c.URL, nil)
 		if err != nil {
 			return err
+		}
+		if c.Headers != nil {
+			for key, header := range c.Headers {
+				evalEnv, _ := envsubst.EvalEnv(strings.Join(header, ", "))
+				req.Header.Add(key, evalEnv)
+			}
+		}
+		basicAuthUsername, basicAuthUsernameOk := c.BasicAuth["username"]
+		basicAuthPassword, basicAuthPasswordOk := c.BasicAuth["password"]
+		if basicAuthUsernameOk && basicAuthPasswordOk {
+			username, _ := envsubst.EvalEnv(basicAuthUsername)
+			password, _ := envsubst.EvalEnv(basicAuthPassword)
+			req.SetBasicAuth(username, password)
 		}
 		resp, err := c.Client.Do(req)
 		if err != nil {
