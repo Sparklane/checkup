@@ -51,7 +51,7 @@ func (c BackupS3Checker) Check() (Result, error) {
 
 	c.s3Service = s3.New(session.New(&aws.Config{Region: aws.String(c.Region)}))
 
-	result := Result{Title: c.Name, Endpoint: c.BucketName, Timestamp: Timestamp()}
+	result := Result{Title: c.Name, Endpoint: c.Name, Timestamp: Timestamp()}
 	result.Times = make(Attempts, 1)
 
 	// https://github.com/awsdocs/aws-doc-sdk-examples/blob/master/go/example_code/s3/s3_list_objects.go
