@@ -1,6 +1,7 @@
 package checkup
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -67,6 +68,9 @@ type HTTPChecker struct {
 	// occurs between retries.
 	RetrySpacing time.Duration `json:"retry_spacing,omitempty"`
 
+	// Insecure TLS Skip Verify.
+	InsecureSkipVerify bool `json:"insecure_skip_verify,omitempty"`
+
 	// Client is the http.Client with which to make
 	// requests. If not set, DefaultHTTPClient is
 	// used.
@@ -91,7 +95,7 @@ func (c HTTPChecker) Check() (Result, error) {
 		c.Retries = 0
 	}
 	if c.Client == nil {
-		c.Client = DefaultHTTPClient
+		c.Client = DefaultHTTPClient(c.InsecureSkipVerify)
 	}
 	if c.UpStatus == 0 {
 		c.UpStatus = http.StatusOK
@@ -126,7 +130,7 @@ func (c HTTPChecker) doChecks() Attempts {
 		} else {
 			checks[i].RTT = time.Since(start)
 		}
- 		if c.AttemptSpacing > 0 {
+		if c.AttemptSpacing > 0 {
 			time.Sleep(c.AttemptSpacing)
 		}
 	}
@@ -150,34 +154,34 @@ func (c HTTPChecker) doRetries() error {
 
 // doCheck executes check and returns error.
 func (c HTTPChecker) doCheck() error {
-		// recreate http request to run dns resolution for each iteration
-		req, err := http.NewRequest("GET", c.URL, nil)
-		if err != nil {
-			return err
+	// recreate http request to run dns resolution for each iteration
+	req, err := http.NewRequest("GET", c.URL, nil)
+	if err != nil {
+		return err
+	}
+	if c.Headers != nil {
+		for key, header := range c.Headers {
+			evalEnv, _ := envsubst.EvalEnv(strings.Join(header, ", "))
+			req.Header.Add(key, evalEnv)
 		}
-		if c.Headers != nil {
-			for key, header := range c.Headers {
-				evalEnv, _ := envsubst.EvalEnv(strings.Join(header, ", "))
-				req.Header.Add(key, evalEnv)
-			}
-		}
-		basicAuthUsername, basicAuthUsernameOk := c.BasicAuth["username"]
-		basicAuthPassword, basicAuthPasswordOk := c.BasicAuth["password"]
-		if basicAuthUsernameOk && basicAuthPasswordOk {
-			username, _ := envsubst.EvalEnv(basicAuthUsername)
-			password, _ := envsubst.EvalEnv(basicAuthPassword)
-			req.SetBasicAuth(username, password)
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		err = c.checkDown(resp)
-		if err != nil {
-			return err
-		}
-		return nil
+	}
+	basicAuthUsername, basicAuthUsernameOk := c.BasicAuth["username"]
+	basicAuthPassword, basicAuthPasswordOk := c.BasicAuth["password"]
+	if basicAuthUsernameOk && basicAuthPasswordOk {
+		username, _ := envsubst.EvalEnv(basicAuthUsername)
+		password, _ := envsubst.EvalEnv(basicAuthPassword)
+		req.SetBasicAuth(username, password)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	err = c.checkDown(resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // conclude takes the data in result from the attempts and
@@ -237,24 +241,27 @@ func (c HTTPChecker) checkDown(resp *http.Response) error {
 	return nil
 }
 
-// DefaultHTTPClient is used when no other http.Client
-// is specified on a HTTPChecker.
-var DefaultHTTPClient = &http.Client{
-	Transport: &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		Dial: (&net.Dialer{
-			Timeout:   10 * time.Second,
-			KeepAlive: 0,
-		}).Dial,
-		TLSHandshakeTimeout:   5 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		MaxIdleConnsPerHost:   1,
-		DisableCompression:    true,
-		DisableKeepAlives:     true,
-		ResponseHeaderTimeout: 5 * time.Second,
-	},
-	CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse
-	},
-	Timeout: 10 * time.Second,
+func DefaultHTTPClient(insecureSkipVerify bool) *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			Dial: (&net.Dialer{
+				Timeout:   10 * time.Second,
+				KeepAlive: 0,
+			}).Dial,
+			TLSHandshakeTimeout: 5 * time.Second,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: insecureSkipVerify,
+			},
+			ExpectContinueTimeout: 1 * time.Second,
+			MaxIdleConnsPerHost:   1,
+			DisableCompression:    true,
+			DisableKeepAlives:     true,
+			ResponseHeaderTimeout: 5 * time.Second,
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Timeout: 10 * time.Second,
+	}
 }
