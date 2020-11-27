@@ -54,6 +54,14 @@ type TLSChecker struct {
 	// over values described from the JSON (exported)
 	// fields, where necessary.
 	tlsConfig *tls.Config
+
+	// IgnoreTimes times when down check result should be ignored
+	// because of recurring maintenance for example
+	IgnoreTimes []string `json:"ignore_times,omitempty"`
+
+	// IgnoreDuration duration when down check result should be ignored
+	// because of recurring maintenance for example
+	IgnoreDuration time.Duration `json:"ignore_duration,omitempty"`
 }
 
 // Check performs checks using c according to its configuration.
@@ -133,6 +141,19 @@ func (c TLSChecker) conclude(conns []*tls.Conn, result Result) Result {
 			}
 		}
 	}()
+
+	if len(c.IgnoreTimes) > 0 && c.IgnoreDuration > 0 {
+		now := time.Now().UTC()
+		for i := range c.IgnoreTimes {
+			start, _ := time.Parse("15:04:05", c.IgnoreTimes[i])
+			start = start.AddDate(now.Year(), int(now.Month())-1, now.Day()-1)
+			end := start.Add(c.IgnoreDuration)
+			if now.After(start) && now.Before(end) {
+				result.Healthy = true
+				return result
+			}
+		}
+	}
 
 	// check errors (down)
 	for i := range result.Times {
