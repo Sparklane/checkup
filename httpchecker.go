@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -200,10 +201,16 @@ func (c HTTPChecker) conclude(result Result) Result {
 	result.ThresholdRTT = c.ThresholdRTT
 
 	if len(c.IgnoreTimes) > 0 && c.IgnoreDuration > 0 {
-		now := time.Now().UTC()
+		timeZone := os.Getenv("TZ")
+		if timeZone == "" {
+			timeZone = "Europe/Paris"
+		}
+		location, _ := time.LoadLocation(timeZone)
+		now := time.Now().UTC().In(location)
 		for i := range c.IgnoreTimes {
-			start, _ := time.Parse("15:04:05", c.IgnoreTimes[i])
+			start, _ := time.ParseInLocation("15:04:05", c.IgnoreTimes[i], location)
 			start = start.AddDate(now.Year(), int(now.Month())-1, now.Day()-1)
+			start = start.In(location)
 			end := start.Add(c.IgnoreDuration)
 			if now.After(start) && now.Before(end) {
 				result.Healthy = true
