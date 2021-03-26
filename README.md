@@ -139,11 +139,35 @@ Here are the configuration structures you can use, which are explained fully [in
 ```json
 {
 	"type": "backup:s3",
-	"endpoint_name": "backup",
+	"endpoint_name": "backup-s3",
 	"region": "eu-west-1",
 	"bucket_name": "BUCKET NAME",
 	"min_age_threshold": "36h",
 	"min_size_threshold": 1048576
+}
+```
+
+#### Backup AMI
+
+```json
+{
+	"type": "backup:ami",
+	"endpoint_name": "backup-ami",
+	"region": "eu-west-1",
+	"ami_prefix": "AMI_PREFIX",
+	"min_age_threshold": "36h"
+}
+```
+
+#### Backup RDS
+
+```json
+{
+		"type": "backup:rds",
+		"endpoint_name": "backup-rds",
+		"region": "eu-west-1",
+		"instance": "RDS_INSTANCE",
+		"min_age_threshold": "36h"
 }
 ```
 

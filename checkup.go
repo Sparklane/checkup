@@ -180,6 +180,10 @@ func (c Checkup) MarshalJSON() ([]byte, error) {
 			switch ch.(type) {
 			case BackupS3Checker:
 				typeName = "backup:s3"
+			case BackupAMIChecker:
+				typeName = "backup:ami"
+			case BackupRDSChecker:
+				typeName = "backup:rds"
 			case HTTPChecker:
 				typeName = "http"
 			case TCPChecker:
@@ -292,6 +296,20 @@ func (c *Checkup) UnmarshalJSON(b []byte) error {
 		switch t.Type {
 		case "backup:s3":
 			var checker BackupS3Checker
+			err = json.Unmarshal(raw.Checkers[i], &checker)
+			if err != nil {
+				return err
+			}
+			c.Checkers = append(c.Checkers, checker)
+		case "backup:ami":
+			var checker BackupAMIChecker
+			err = json.Unmarshal(raw.Checkers[i], &checker)
+			if err != nil {
+				return err
+			}
+			c.Checkers = append(c.Checkers, checker)
+		case "backup:rds":
+			var checker BackupRDSChecker
 			err = json.Unmarshal(raw.Checkers[i], &checker)
 			if err != nil {
 				return err
