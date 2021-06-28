@@ -92,6 +92,9 @@ type HTTPChecker struct {
 	// Headers contains headers to added to the request
 	// that is sent for the check
 	BasicAuth map[string]string `json:"basic_auth,omitempty"`
+
+	// Set degraded instead of down
+	Degraded bool `json:"degraded,omitempty"`
 }
 
 // Check performs checks using c according to its configuration.
@@ -222,7 +225,11 @@ func (c HTTPChecker) conclude(result Result) Result {
 	// Check errors (down)
 	for i := range result.Times {
 		if result.Times[i].Error != "" {
-			result.Down = true
+			if c.Degraded {
+				result.Degraded = true
+			} else {
+				result.Down = true
+			}
 			return result
 		}
 	}
