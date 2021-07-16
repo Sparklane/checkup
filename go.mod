@@ -11,7 +11,7 @@ require (
 	github.com/fatih/color v1.12.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/jmoiron/sqlx v1.2.0
+	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/miekg/dns v1.1.16
