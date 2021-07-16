@@ -8,13 +8,11 @@ require (
 	github.com/drone/envsubst v1.0.3
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/fatih/color v1.7.0
+	github.com/fatih/color v1.12.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.10.2
-	github.com/mattn/go-colorable v0.1.2 // indirect
-	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/miekg/dns v1.1.16
 	github.com/moul/http2curl v1.0.0 // indirect
