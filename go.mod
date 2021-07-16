@@ -14,7 +14,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.8
-	github.com/miekg/dns v1.1.16
+	github.com/miekg/dns v1.1.43
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/parnurzeal/gorequest v0.2.15 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
