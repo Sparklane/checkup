@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/ashwanthkumar/slack-go-webhook v0.0.0-20181208062437-4a19b1a876b7
-	github.com/aws/aws-sdk-go v1.23.22
+	github.com/aws/aws-sdk-go v1.40.2
 	github.com/drone/envsubst v1.0.3
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
@@ -17,7 +17,6 @@ require (
 	github.com/miekg/dns v1.1.43
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/parnurzeal/gorequest v0.2.15 // indirect
-	github.com/pkg/errors v0.8.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
 	github.com/spf13/cobra v0.0.7
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
